@@ -1,0 +1,1 @@
+# Figure Collector Integration Tests
