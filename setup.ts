@@ -57,7 +57,7 @@ export const scraperAPI = axios.create({
 });
 
 export const versionAPI = axios.create({
-  baseURL: TEST_CONFIG.VERSION_SERVICE_URL,
+  baseURL: TEST_CONFIG.VERSION_MANAGER_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -180,7 +180,7 @@ beforeAll(async () => {
     backend: TEST_CONFIG.BACKEND_URL,
     frontend: TEST_CONFIG.FRONTEND_URL,
     scraper: TEST_CONFIG.SCRAPER_URL,
-    version: TEST_CONFIG.VERSION_SERVICE_URL,
+    version: TEST_CONFIG.VERSION_MANAGER_URL,
     mongodb: TEST_CONFIG.MONGODB_URI,
     timeout: TEST_CONFIG.TEST_TIMEOUT
   });
@@ -189,7 +189,7 @@ beforeAll(async () => {
   console.log('🏗️  Phase 1: Infrastructure services...');
   
   const infrastructureServices = [
-    { name: 'Version Service', url: `${TEST_CONFIG.VERSION_SERVICE_URL}/health`, timeout: 60000 },
+    { name: 'Version Service', url: `${TEST_CONFIG.VERSION_MANAGER_URL}/health`, timeout: 60000 },
     { name: 'Page Scraper', url: `${TEST_CONFIG.SCRAPER_URL}/health`, timeout: 90000 }
   ];
   
