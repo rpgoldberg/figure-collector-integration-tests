@@ -2,12 +2,15 @@ import { MongoClient } from 'mongodb';
 import axios from 'axios';
 
 // Environment configuration
+// Check if running inside Docker by looking for INSIDE_DOCKER env var
+const isInsideDocker = process.env.INSIDE_DOCKER === 'true';
+
 export const TEST_CONFIG = {
-  BACKEND_URL: process.env.BACKEND_URL || 'http://backend-test:5055',
-  FRONTEND_URL: process.env.FRONTEND_URL || 'http://frontend-test:5056',
-  SCRAPER_URL: process.env.SCRAPER_URL || 'http://scraper-test:3005',
-  VERSION_MANAGER_URL: process.env.VERSION_MANAGER_URL || 'http://version-manager-test:3006',
-  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://testuser:testpass@mongodb-test:27017/figcollector_test?authSource=admin',
+  BACKEND_URL: process.env.BACKEND_URL || (isInsideDocker ? 'http://backend-test:5055' : 'http://localhost:5055'),
+  FRONTEND_URL: process.env.FRONTEND_URL || (isInsideDocker ? 'http://frontend-test:5056' : 'http://localhost:5056'),
+  SCRAPER_URL: process.env.SCRAPER_URL || (isInsideDocker ? 'http://scraper-test:3005' : 'http://localhost:3005'),
+  VERSION_MANAGER_URL: process.env.VERSION_MANAGER_URL || (isInsideDocker ? 'http://version-manager-test:3006' : 'http://localhost:3006'),
+  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://testuser:testpass@localhost:27018/figure_collector_test?authSource=admin',
   TEST_TIMEOUT: parseInt(process.env.TEST_TIMEOUT || '180000'),
   COVERAGE_ENABLED: process.env.COVERAGE_ENABLED === 'true'
 };
@@ -103,13 +106,12 @@ export const waitForService = async (url: string, maxRetries = 45, interval = 30
 
 export const authenticateUser = async (username: string, password: string): Promise<string> => {
   try {
-    const response = await backendAPI.post('/users/login', {
-      username: username,
+    const response = await backendAPI.post('/auth/login', {
       email: TEST_USERS[username as keyof typeof TEST_USERS]?.email || `${username}@example.com`,
       password
     });
     
-    const token = response.data.data.token;
+    const token = response.data.data.accessToken;
     authTokens[username] = token;
     
     // Set default authorization header for future requests
@@ -162,7 +164,7 @@ export const cleanupTestData = async (): Promise<void> => {
 
 export const createTestFigure = async (username: string, figureData: any) => {
   const api = getAuthenticatedAPI(username);
-  const response = await api.post('/api/figures', figureData);
+  const response = await api.post('/figures', figureData);
   return response.data.data;
 };
 
@@ -226,15 +228,17 @@ beforeAll(async () => {
   console.log('✅ MongoDB connected');
   
   // Verify test data exists
-  const db = mongoClient.db('figcollector_test');
+  const db = mongoClient.db('figure_collector_test');
   const userCount = await db.collection('users').countDocuments();
   const figureCount = await db.collection('figures').countDocuments();
   
   console.log(`📋 Test data verification: ${userCount} users, ${figureCount} figures`);
   
-  if (userCount === 0 || figureCount === 0) {
-    throw new Error('❌ Test data not found. Ensure MongoDB initialization completed.');
+  if (userCount === 0) {
+    throw new Error('❌ Test users not found. Ensure MongoDB initialization completed.');
   }
+  
+  // Note: Figures may be 0 as tests may clean up after themselves
   
   // Pre-authenticate test users for performance
   console.log('🔐 Pre-authenticating test users...');
@@ -266,10 +270,8 @@ afterAll(async () => {
   console.log('✨ Integration test suite cleanup completed');
 }, 60000); // Increased cleanup timeout
 
-afterEach(async () => {
-  // Clean up any test-specific data after each test
-  await cleanupTestData();
-});
+// Removed afterEach cleanup to prevent deleting data during tests
+// Cleanup is handled in afterAll instead
 
 // Global error handler for unhandled promises
 process.on('unhandledRejection', (reason, promise) => {

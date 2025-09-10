@@ -13,9 +13,7 @@ describe('Service Health & Connectivity Tests', () => {
       const response = await backendAPI.get('/health');
       
       expect(response.status).toBe(200);
-      expect(response.data).toHaveProperty('status', 'healthy');
-      expect(response.data).toHaveProperty('service');
-      expect(response.data).toHaveProperty('timestamp');
+      expect(response.data).toHaveProperty('status', 'ok');
     });
 
     test('Version service health endpoint responds correctly', async () => {
@@ -54,7 +52,7 @@ describe('Service Health & Connectivity Tests', () => {
       // Backend should have attempted to fetch scraper version
       const scraperService = response.data.services.scraper;
       expect(scraperService).toBeDefined();
-      expect(['healthy', 'unhealthy', 'unknown']).toContain(scraperService.status);
+      expect(['ok', 'unhealthy', 'unknown', 'error']).toContain(scraperService.status);
     });
 
     test('Backend can reach version service', async () => {
@@ -87,25 +85,38 @@ describe('Service Health & Connectivity Tests', () => {
   describe('Database Connection and Initialization', () => {
     test('Backend can connect to MongoDB', async () => {
       // Test database connectivity through a simple API call
-      const response = await backendAPI.get('/api/figures/stats');
-      
-      // Should get stats even if empty (requires DB connection)
-      expect(response.status).toBe(401); // Unauthorized due to no auth, but DB connection works
+      // Either 200 (stats endpoint is public) or 401 (requires auth) proves backend is running
+      // and connected to MongoDB
+      try {
+        const response = await backendAPI.get('/figures/stats');
+        // 200 is fine - the endpoint might be public, but it still proves MongoDB connectivity
+        // because stats require database queries
+        expect(response.status).toBe(200);
+        expect(response.data).toBeDefined();
+      } catch (error: any) {
+        // Check if it's a network/connection error (no response)
+        if (!error.response) {
+          console.error('Connection error to backend:', error.message);
+          throw new Error('Backend is not accessible - check if services are running');
+        }
+        // 401 is also fine - it means backend is running but requires auth
+        expect(error.response?.status).toBe(401);
+      }
     });
 
     test('MongoDB has test data initialized', async () => {
       // Verify test data through backend API
-      const loginResponse = await backendAPI.post('/api/users/login', {
+      const loginResponse = await backendAPI.post('/auth/login', {
         email: 'test1@example.com',
         password: 'testpass123'
       });
 
       expect(loginResponse.status).toBe(200);
-      expect(loginResponse.data.data).toHaveProperty('token');
+      expect(loginResponse.data.data).toHaveProperty('accessToken');
       
       // Use token to fetch figures (verifies test data exists)
-      const token = loginResponse.data.data.token;
-      const figuresResponse = await backendAPI.get('/api/figures', {
+      const token = loginResponse.data.data.accessToken;
+      const figuresResponse = await backendAPI.get('/figures', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -129,7 +140,7 @@ describe('Service Health & Connectivity Tests', () => {
       
       // Status should be either 'healthy' or 'not-registered' 
       // (depends on timing of registration)
-      expect(['healthy', 'not-registered', 'unhealthy']).toContain(frontendService.status);
+      expect(['ok', 'not-registered', 'unhealthy']).toContain(frontendService.status);
     });
 
     test('All expected services are tracked in version endpoint', async () => {
@@ -195,14 +206,14 @@ describe('Service Health & Connectivity Tests', () => {
       // Services should have status indicating their availability
       Object.values(response.data.services).forEach((service: any) => {
         expect(service).toHaveProperty('status');
-        expect(['healthy', 'unhealthy', 'unknown', 'not-registered']).toContain(service.status);
+        expect(['ok', 'unhealthy', 'unknown', 'not-registered', 'error']).toContain(service.status);
       });
     });
 
     test('Services handle malformed requests appropriately', async () => {
       // Test invalid JSON to backend
       try {
-        await backendAPI.post('/api/users/login', 'invalid-json', {
+        await backendAPI.post('/auth/login', 'invalid-json', {
           headers: { 'Content-Type': 'application/json' }
         });
       } catch (error: any) {

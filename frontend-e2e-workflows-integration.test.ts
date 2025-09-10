@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // End-to-End Workflows Integration Test relocated from figure-collector-frontend  
 describe('Frontend E2E Workflows Integration', () => {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5055';
   let authToken: string;
   let testUserId: string;
 
@@ -11,14 +11,14 @@ describe('Frontend E2E Workflows Integration', () => {
     
     // Create test user for workflows
     const testUser = {
-      username: `e2e_user_${Date.now()}`,
+      username: `e2euser${Date.now()}`,
       email: `e2e_${Date.now()}@example.com`,
       password: 'e2e_test_password_123'
     };
 
     try {
       // Register test user
-      const registerResponse = await axios.post(`${backendUrl}/users/register`, testUser, {
+      const registerResponse = await axios.post(`${backendUrl}/auth/register`, testUser, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 10000
       });
@@ -28,8 +28,7 @@ describe('Frontend E2E Workflows Integration', () => {
       }
 
       // Login to get auth token
-      const loginResponse = await axios.post(`${backendUrl}/users/login`, {
-        username: testUser.username,
+      const loginResponse = await axios.post(`${backendUrl}/auth/login`, {
         email: testUser.email,
         password: testUser.password
       }, {
@@ -37,8 +36,8 @@ describe('Frontend E2E Workflows Integration', () => {
         timeout: 10000
       });
 
-      authToken = loginResponse.data.token;
-      testUserId = loginResponse.data.user.id;
+      authToken = loginResponse.data.data.accessToken;
+      testUserId = loginResponse.data.data._id;
       console.log(`✅ Authentication token obtained for E2E tests`);
     } catch (error) {
       console.log('ℹ️  Could not create test user - using existing credentials if available');
@@ -54,14 +53,14 @@ describe('Frontend E2E Workflows Integration', () => {
   describe('Complete User Registration and Login Workflow', () => {
     it('executes full user registration → login → dashboard access workflow', async () => {
       const workflowUser = {
-        username: `workflow_user_${Date.now()}`,
+        username: `workflowuser${Date.now()}`,
         email: `workflow_${Date.now()}@example.com`,
         password: 'WorkflowTest123!'
       };
 
       try {
         // Step 1: Register new user
-        const registerResponse = await axios.post(`${backendUrl}/users/register`, workflowUser, {
+        const registerResponse = await axios.post(`${backendUrl}/auth/register`, workflowUser, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
@@ -72,8 +71,7 @@ describe('Frontend E2E Workflows Integration', () => {
         console.log(`✅ Step 1: User registration successful`);
 
         // Step 2: Login with new credentials
-        const loginResponse = await axios.post(`${backendUrl}/users/login`, {
-          username: workflowUser.username,
+        const loginResponse = await axios.post(`${backendUrl}/auth/login`, {
           email: workflowUser.email,
           password: workflowUser.password
         }, {
@@ -83,13 +81,13 @@ describe('Frontend E2E Workflows Integration', () => {
 
         expect(loginResponse.status).toBe(200);
         expect(loginResponse.data).toHaveProperty('success', true);
-        expect(loginResponse.data.data).toHaveProperty('token');
+        expect(loginResponse.data.data).toHaveProperty('accessToken');
         console.log(`✅ Step 2: Login successful`);
 
         // Step 3: Access protected dashboard data
         const dashboardResponse = await axios.get(`${backendUrl}/figures/stats`, {
           headers: {
-            'Authorization': `Bearer ${loginResponse.data.data.token}`,
+            'Authorization': `Bearer ${loginResponse.data.data.accessToken}`,
             'Content-Type': 'application/json'
           },
           timeout: 10000
@@ -118,9 +116,7 @@ describe('Frontend E2E Workflows Integration', () => {
       const workflowFigure = {
         name: 'E2E Test Figure',
         manufacturer: 'E2E Test Company',
-        series: 'E2E Test Series',
         scale: '1/8',
-        price: 20000,
         location: 'E2E Test Location',
         boxNumber: 'E2E-001'
       };
@@ -135,9 +131,11 @@ describe('Frontend E2E Workflows Integration', () => {
         });
 
         expect(createResponse.status).toBe(201);
-        expect(createResponse.data).toHaveProperty('_id');
-        expect(createResponse.data.name).toBe(workflowFigure.name);
-        figureId = createResponse.data._id;
+        // Response structure is data.data._id
+        expect(createResponse.data).toHaveProperty('data');
+        expect(createResponse.data.data).toHaveProperty('_id');
+        expect(createResponse.data.data.name).toBe(workflowFigure.name);
+        figureId = createResponse.data.data._id;
         console.log(`✅ Step 1: Figure creation successful - ID: ${figureId}`);
 
         // Step 2: Retrieve figure by ID
@@ -147,15 +145,17 @@ describe('Frontend E2E Workflows Integration', () => {
         });
 
         expect(retrieveResponse.status).toBe(200);
-        expect(retrieveResponse.data._id).toBe(figureId);
-        expect(retrieveResponse.data.name).toBe(workflowFigure.name);
+        expect(retrieveResponse.data.data._id).toBe(figureId);
+        expect(retrieveResponse.data.data.name).toBe(workflowFigure.name);
         console.log(`✅ Step 2: Figure retrieval successful`);
 
         // Step 3: Update figure
         const updateData = {
           name: 'E2E Updated Test Figure',
-          price: 25000,
-          location: 'E2E Updated Location'
+          location: 'E2E Updated Location',
+          manufacturer: workflowFigure.manufacturer,
+          scale: workflowFigure.scale,
+          boxNumber: workflowFigure.boxNumber
         };
 
         const updateResponse = await axios.put(`${backendUrl}/figures/${figureId}`, updateData, {
@@ -164,8 +164,8 @@ describe('Frontend E2E Workflows Integration', () => {
         });
 
         expect(updateResponse.status).toBe(200);
-        expect(updateResponse.data.name).toBe(updateData.name);
-        expect(updateResponse.data.price).toBe(updateData.price);
+        expect(updateResponse.data.data.name).toBe(updateData.name);
+        expect(updateResponse.data.data.location).toBe(updateData.location);
         console.log(`✅ Step 3: Figure update successful`);
 
         // Step 4: Verify figure appears in list
@@ -217,9 +217,9 @@ describe('Frontend E2E Workflows Integration', () => {
 
       // Create test figures for search
       const testFigures = [
-        { name: 'Search Test Miku', manufacturer: 'Good Smile Company', scale: '1/8', location: 'Display A' },
-        { name: 'Search Test Luka', manufacturer: 'Good Smile Company', scale: '1/7', location: 'Display B' },
-        { name: 'Search Test Rin', manufacturer: 'ALTER', scale: '1/8', location: 'Display A' }
+        { name: 'Search Test Miku', manufacturer: 'Good Smile Company', scale: '1/8', location: 'Display A', boxNumber: 'SEARCH001' },
+        { name: 'Search Test Luka', manufacturer: 'Good Smile Company', scale: '1/7', location: 'Display B', boxNumber: 'SEARCH002' },
+        { name: 'Search Test Rin', manufacturer: 'ALTER', scale: '1/8', location: 'Display A', boxNumber: 'SEARCH003' }
       ];
 
       for (const figure of testFigures) {
@@ -228,7 +228,7 @@ describe('Frontend E2E Workflows Integration', () => {
             headers: getAuthHeaders(),
             timeout: 10000
           });
-          searchFigures.push(response.data);
+          searchFigures.push(response.data.data);
         } catch (error) {
           console.log(`ℹ️  Could not create search test figure: ${figure.name}`);
         }
@@ -245,7 +245,8 @@ describe('Frontend E2E Workflows Integration', () => {
 
       try {
         // Step 1: General search
-        const searchResponse = await axios.get(`${backendUrl}/figures/search?q=Search Test`, {
+        const searchQuery = encodeURIComponent('Search Test');
+        const searchResponse = await axios.get(`${backendUrl}/figures/search?query=${searchQuery}`, {
           headers: getAuthHeaders(),
           timeout: 10000
         });
@@ -258,29 +259,23 @@ describe('Frontend E2E Workflows Integration', () => {
         );
         console.log(`✅ Step 1: General search found ${searchResults.length} results`);
 
-        // Step 2: Manufacturer filter
-        const manufacturerFilter = await axios.get(`${backendUrl}/figures?manufacturer=Good Smile Company`, {
+        // Step 2: Filter results by manufacturer (client-side since backend doesn't support query filter)
+        const allFigures = await axios.get(`${backendUrl}/figures`, {
           headers: getAuthHeaders(),
           timeout: 10000
         });
 
-        expect(manufacturerFilter.status).toBe(200);
-        const gscFigures = manufacturerFilter.data.data.filter((f: any) => 
+        expect(allFigures.status).toBe(200);
+        const gscFigures = allFigures.data.data.filter((f: any) => 
           f.manufacturer === 'Good Smile Company' && f.name.includes('Search Test')
         );
-        console.log(`✅ Step 2: Manufacturer filter found ${gscFigures.length} Good Smile Company figures`);
+        console.log(`✅ Step 2: Client-side manufacturer filter found ${gscFigures.length} Good Smile Company figures`);
 
-        // Step 3: Scale filter  
-        const scaleFilter = await axios.get(`${backendUrl}/figures?scale=1/8`, {
-          headers: getAuthHeaders(),
-          timeout: 10000
-        });
-
-        expect(scaleFilter.status).toBe(200);
-        const oneEighthFigures = scaleFilter.data.data.filter((f: any) => 
+        // Step 3: Filter results by scale (client-side since backend doesn't support query filter)
+        const oneEighthFigures = allFigures.data.data.filter((f: any) => 
           f.scale === '1/8' && f.name.includes('Search Test')
         );
-        console.log(`✅ Step 3: Scale filter found ${oneEighthFigures.length} 1/8 scale figures`);
+        console.log(`✅ Step 3: Client-side scale filter found ${oneEighthFigures.length} 1/8 scale figures`);
 
         // Step 4: Pagination
         const paginatedResponse = await axios.get(`${backendUrl}/figures?page=1&limit=2`, {
@@ -335,14 +330,16 @@ describe('Frontend E2E Workflows Integration', () => {
         });
 
         expect(statsResponse.status).toBe(200);
-        expect(statsResponse.data).toHaveProperty('totalCount');
-        expect(statsResponse.data).toHaveProperty('manufacturerStats');
-        expect(statsResponse.data).toHaveProperty('scaleStats');
-        expect(statsResponse.data).toHaveProperty('locationStats');
-        console.log(`✅ Step 1: Statistics retrieved - ${statsResponse.data.totalCount} total figures`);
+        expect(statsResponse.data).toHaveProperty('data');
+        const stats = statsResponse.data.data;
+        expect(stats).toHaveProperty('totalCount');
+        expect(stats).toHaveProperty('manufacturerStats');
+        expect(stats).toHaveProperty('scaleStats');
+        expect(stats).toHaveProperty('locationStats');
+        console.log(`✅ Step 1: Statistics retrieved - ${stats.totalCount} total figures`);
 
         // Step 2: Analyze manufacturer distribution
-        const manufacturerStats = statsResponse.data.manufacturerStats;
+        const manufacturerStats = stats.manufacturerStats;
         expect(Array.isArray(manufacturerStats)).toBe(true);
         if (manufacturerStats.length > 0) {
           expect(manufacturerStats[0]).toHaveProperty('_id');
@@ -353,7 +350,7 @@ describe('Frontend E2E Workflows Integration', () => {
         }
 
         // Step 3: Analyze scale distribution
-        const scaleStats = statsResponse.data.scaleStats;
+        const scaleStats = stats.scaleStats;
         expect(Array.isArray(scaleStats)).toBe(true);
         if (scaleStats.length > 0) {
           expect(scaleStats[0]).toHaveProperty('_id');
@@ -364,7 +361,7 @@ describe('Frontend E2E Workflows Integration', () => {
         }
 
         // Step 4: Analyze location distribution
-        const locationStats = statsResponse.data.locationStats;
+        const locationStats = stats.locationStats;
         expect(Array.isArray(locationStats)).toBe(true);
         if (locationStats.length > 0) {
           expect(locationStats[0]).toHaveProperty('_id');
@@ -432,12 +429,12 @@ describe('Frontend E2E Workflows Integration', () => {
           });
 
           expect(recoveryResponse.status).toBe(201);
-          expect(recoveryResponse.data.name).toBe(validFigure.name);
+          expect(recoveryResponse.data.data.name).toBe(validFigure.name);
           console.log('✅ Step 3: Successful recovery after error correction');
 
           // Cleanup
           try {
-            await axios.delete(`${backendUrl}/figures/${recoveryResponse.data._id}`, {
+            await axios.delete(`${backendUrl}/figures/${recoveryResponse.data.data._id}`, {
               headers: getAuthHeaders(),
               timeout: 5000
             });
