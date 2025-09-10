@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // MFC Scraping Integration Test relocated from figure-collector-frontend
 describe('Frontend MFC Scraping Integration', () => {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-  const scraperUrl = process.env.SCRAPER_URL || 'http://localhost:3002';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5055';
+  const scraperUrl = process.env.SCRAPER_URL || 'http://localhost:3005';
   let authToken: string;
 
   beforeAll(async () => {
@@ -19,7 +19,7 @@ describe('Frontend MFC Scraping Integration', () => {
         timeout: 10000
       });
 
-      authToken = loginResponse.data.token;
+      authToken = loginResponse.data.data.accessToken;
       console.log('✅ Authentication token obtained for MFC scraping tests');
     } catch (error) {
       console.log('ℹ️  Could not obtain auth token - scraping tests may be limited');

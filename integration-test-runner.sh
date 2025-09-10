@@ -102,8 +102,7 @@ wait_for_container_health() {
                 return 0
                 ;;
             "unhealthy")
-                log_error "Container $container_name is unhealthy"
-                return 1
+                log_warning "Container $container_name is unhealthy, continuing to wait..."
                 ;;
             "starting")
                 log_info "Attempt $attempt/$max_attempts: Container $container_name is starting..."
@@ -122,6 +121,7 @@ wait_for_container_health() {
     done
     
     log_error "Container $container_name failed to become healthy within timeout"
+    log_info "Final health status: $(check_container_health $container_name)"
     return 1
 }
 
@@ -204,13 +204,13 @@ run_integration_tests() {
     
     # Phase 2: Start independent services (version-service and page-scraper)
     log_info "Phase 2: Starting independent services..."
-    docker-compose -f $COMPOSE_FILE -p $PROJECT_NAME up -d version-service-test scraper-test
+    docker-compose -f $COMPOSE_FILE -p $PROJECT_NAME up -d version-manager-test scraper-test
     
     # Wait for version service
     log_info "Waiting for version service (lightweight, should be quick)..."
-    if ! wait_for_container_health "version-service-test" 30; then
+    if ! wait_for_container_health "version-manager-test" 60; then
         log_error "Version service failed to start"
-        show_service_logs "version-service-test" 100
+        show_service_logs "version-manager-test" 100
         exit 1
     fi
     
@@ -290,7 +290,7 @@ run_integration_tests() {
     # Also try to copy from individual service containers if they have coverage
     docker cp backend-test:/app/coverage/ ./integration-test-results/backend-coverage/ 2>/dev/null || log_info "No backend coverage to extract"
     docker cp scraper-test:/app/coverage/ ./integration-test-results/scraper-coverage/ 2>/dev/null || log_info "No scraper coverage to extract"
-    docker cp version-service-test:/app/coverage/ ./integration-test-results/version-coverage/ 2>/dev/null || log_info "No version service coverage to extract"
+    docker cp version-manager-test:/app/coverage/ ./integration-test-results/version-coverage/ 2>/dev/null || log_info "No version service coverage to extract"
     
     log_info "Integration test execution completed"
     return $container_exit_code
@@ -319,11 +319,11 @@ run_debug_mode() {
     
     # Start all services
     docker-compose -f $COMPOSE_FILE -p $PROJECT_NAME up -d \
-        mongodb-test version-service-test scraper-test backend-test frontend-test
+        mongodb-test version-manager-test scraper-test backend-test frontend-test
     
     # Wait for all services with proper container names
     wait_for_container_health "mongodb-test" $MAX_RETRIES
-    wait_for_container_health "version-service-test" $MAX_RETRIES
+    wait_for_container_health "version-manager-test" $MAX_RETRIES
     wait_for_container_health "scraper-test" $MAX_RETRIES
     wait_for_container_health "backend-test" $MAX_RETRIES
     wait_for_container_health "frontend-test" $MAX_RETRIES

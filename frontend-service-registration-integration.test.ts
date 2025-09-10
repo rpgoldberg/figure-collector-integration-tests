@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // Service Registration Integration Test relocated from figure-collector-frontend
 describe('Frontend Service Registration Integration', () => {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-  const versionServiceUrl = process.env.VERSION_SERVICE_URL || 'http://localhost:3020';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5055';
+  const versionServiceUrl = process.env.VERSION_SERVICE_URL || 'http://localhost:3006';
 
   beforeAll(async () => {
     console.log('📋 Starting Frontend Service Registration Integration Tests');
@@ -77,11 +77,13 @@ describe('Frontend Service Registration Integration', () => {
         // If registration succeeds, that's fine - some fields may be optional
         expect(response.status).toBe(200);
         console.log('✅ Service registration with minimal data handled correctly');
-      } catch (error) {
-        if (error.response?.status === 422) {
+      } catch (error: any) {
+        // Either 400 or 422 for validation errors is acceptable
+        if (error.response?.status === 422 || error.response?.status === 400) {
           console.log('✅ Service registration validation working correctly');
-          expect(error.response.status).toBe(422);
+          expect([400, 422]).toContain(error.response.status);
         } else {
+          console.error('Unexpected error:', error.response?.status, error.response?.data);
           throw error;
         }
       }

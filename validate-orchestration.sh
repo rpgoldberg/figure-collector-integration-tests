@@ -52,7 +52,7 @@ for i in {1..20}; do
 done
 
 log_info "Phase 2: Independent services..."
-docker-compose -f $COMPOSE_FILE -p $PROJECT_NAME up -d version-service-test scraper-test
+docker-compose -f $COMPOSE_FILE -p $PROJECT_NAME up -d version-manager-test scraper-test
 
 # Wait for version service
 for i in {1..15}; do
@@ -62,7 +62,7 @@ for i in {1..15}; do
     fi
     if [ $i -eq 15 ]; then
         log_error "Version service failed"
-        docker logs version-service-test --tail 20
+        docker logs version-manager-test --tail 20
         exit 1
     fi
     sleep 2
@@ -120,7 +120,7 @@ log_info "Phase 5: Cross-service connectivity validation..."
 
 # Test backend can reach other services
 log_info "Testing backend → version service connectivity..."
-if docker exec backend-test curl -f http://version-service-test:3006/health 2>/dev/null | grep -q "ok\|healthy"; then
+if docker exec backend-test curl -f http://version-manager-test:3006/health 2>/dev/null | grep -q "ok\|healthy"; then
     log_success "Backend ↔ Version service connectivity: OK"
 else
     log_warning "Backend → Version service connectivity issue"

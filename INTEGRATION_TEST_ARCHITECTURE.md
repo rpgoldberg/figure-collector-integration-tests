@@ -20,7 +20,7 @@ The following inter-service communication patterns are tested:
 
 3. **Frontend → Backend**
    - All business logic via `/api/*` routes
-   - Authentication: `/api/users/login`, `/api/users/register`
+   - Authentication: `/api/auth/login`, `/api/auth/register`
    - Figure management: `/api/figures/*` endpoints
    - Search and filtering: `/api/figures/search`, `/api/figures/filter`
 

@@ -3,8 +3,8 @@ import { execSync } from 'child_process';
 
 // Accessibility Integration Test relocated from figure-collector-frontend
 describe('Frontend Accessibility Integration', () => {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5055';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5056';
 
   beforeAll(async () => {
     console.log('♿ Starting Frontend Accessibility Integration Tests');

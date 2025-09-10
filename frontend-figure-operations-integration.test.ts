@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Figure Operations Integration Test relocated from figure-collector-frontend
 describe('Frontend Figure Operations Integration', () => {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5055';
   let authToken: string;
   let testFigureId: string;
 
@@ -11,12 +11,11 @@ describe('Frontend Figure Operations Integration', () => {
     
     // Try to get auth token for API calls
     try {
-      const loginResponse = await axios.post(`${backendUrl}/users/login`, {
-        username: 'testuser1',
+      const loginResponse = await axios.post(`${backendUrl}/auth/login`, {
         email: 'test1@example.com',
         password: 'testpass123'
       });
-      authToken = loginResponse.data.data.token;
+      authToken = loginResponse.data.data.accessToken;
       console.log('✅ Authentication token obtained');
     } catch (error) {
       console.log('ℹ️  Could not obtain auth token - some tests may be skipped');

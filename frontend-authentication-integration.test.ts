@@ -3,8 +3,8 @@ import axios from 'axios';
 
 // Authentication Integration Test relocated from figure-collector-frontend
 describe('Frontend Authentication Integration', () => {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5055';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5056';
 
   beforeAll(async () => {
     console.log('🔐 Starting Frontend Authentication Integration Tests');
@@ -22,13 +22,12 @@ describe('Frontend Authentication Integration', () => {
   describe('Backend Login API Integration', () => {
     it('successfully logs in with valid credentials via backend API', async () => {
       const loginData = {
-        username: 'testuser1',
         email: 'test1@example.com',
         password: 'testpass123'
       };
 
       try {
-        const response = await axios.post(`${backendUrl}/users/login`, loginData, {
+        const response = await axios.post(`${backendUrl}/auth/login`, loginData, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
@@ -36,7 +35,7 @@ describe('Frontend Authentication Integration', () => {
         expect(response.status).toBe(200);
         expect(response.data).toHaveProperty('success', true);
         expect(response.data).toHaveProperty('data');
-        expect(response.data.data).toHaveProperty('token');
+        expect(response.data.data).toHaveProperty('accessToken');
         expect(response.data.data).toHaveProperty('email', loginData.email);
 
         console.log(`✅ Authentication successful for ${loginData.email}`);
@@ -52,13 +51,12 @@ describe('Frontend Authentication Integration', () => {
 
     it('handles invalid credentials correctly via backend API', async () => {
       const loginData = {
-        username: 'invaliduser',
         email: 'invalid@example.com',
         password: 'wrongpassword'
       };
 
       try {
-        const response = await axios.post(`${backendUrl}/users/login`, loginData, {
+        const response = await axios.post(`${backendUrl}/auth/login`, loginData, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
@@ -73,17 +71,18 @@ describe('Frontend Authentication Integration', () => {
     });
 
     it('validates required fields in login request', async () => {
-      const incompleteData = { username: 'testuser1', email: 'test1@example.com' }; // Missing password
+      const incompleteData = { email: 'test1@example.com' }; // Missing password
 
       try {
-        const response = await axios.post(`${backendUrl}/users/login`, incompleteData, {
+        const response = await axios.post(`${backendUrl}/auth/login`, incompleteData, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
 
         throw new Error('Expected validation error');
       } catch (error) {
-        expect(error.response?.status).toBe(401); // Authentication failure for incomplete credentials
+        expect(error.response?.status).toBe(422); // Validation error for incomplete credentials
+        expect(error.response?.data?.message).toContain('Validation');
         console.log(`✅ Field validation working correctly`);
       }
     });
@@ -91,14 +90,14 @@ describe('Frontend Authentication Integration', () => {
 
   describe('Registration API Integration', () => {
     const testUser = {
-      username: `testuser_${Date.now()}`,
+      username: `testuser${Date.now()}`,
       email: `test_${Date.now()}@example.com`,
       password: 'securepassword123'
     };
 
     it('successfully registers new user via backend API', async () => {
       try {
-        const response = await axios.post(`${backendUrl}/users/register`, testUser, {
+        const response = await axios.post(`${backendUrl}/auth/register`, testUser, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
@@ -122,7 +121,7 @@ describe('Frontend Authentication Integration', () => {
     it('prevents duplicate user registration', async () => {
       // Try to register the same user again
       try {
-        const response = await axios.post(`${backendUrl}/users/register`, testUser, {
+        const response = await axios.post(`${backendUrl}/auth/register`, testUser, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
@@ -141,12 +140,11 @@ describe('Frontend Authentication Integration', () => {
     beforeAll(async () => {
       // Login to get a token
       try {
-        const response = await axios.post(`${backendUrl}/users/login`, {
-          username: 'testuser1',
+        const response = await axios.post(`${backendUrl}/auth/login`, {
           email: 'test1@example.com',
           password: 'testpass123'
         });
-        authToken = response.data.data.token;
+        authToken = response.data.data.accessToken;
       } catch (error) {
         console.log('ℹ️  Could not obtain auth token for protected route tests');
         authToken = null;

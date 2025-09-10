@@ -2,9 +2,9 @@ import axios from 'axios';
 
 // App-level Integration Test relocated from figure-collector-frontend
 describe('Frontend App Integration', () => {
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  const versionServiceUrl = process.env.VERSION_SERVICE_URL || 'http://localhost:3020';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:5055';
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5056';
+  const versionServiceUrl = process.env.VERSION_SERVICE_URL || 'http://localhost:3006';
 
   beforeAll(async () => {
     console.log('🚀 Starting Frontend App Integration Tests');
@@ -165,7 +165,7 @@ describe('Frontend App Integration', () => {
           timeout: 10000
         });
 
-        authToken = loginResponse.data.token;
+        authToken = loginResponse.data.data.accessToken;
         console.log('✅ Authentication token obtained for data flow tests');
       } catch (error) {
         console.log('ℹ️  Could not obtain auth token - some data flow tests may be skipped');
