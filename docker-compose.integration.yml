@@ -70,6 +70,7 @@ services:
     environment:
       - NODE_ENV=test
       - PORT=3006
+      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
     networks:
       - integration-network
     healthcheck:
@@ -78,7 +79,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-    command: ["npm", "start"]
 
   # Page scraper service - web scraping with Puppeteer
   scraper-test:

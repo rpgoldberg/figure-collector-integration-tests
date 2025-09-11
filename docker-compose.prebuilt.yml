@@ -69,6 +69,7 @@ services:
     environment:
       - NODE_ENV=test
       - PORT=3006
+      - RUN_SERVER=1  # If using test image, run server instead of tests
     networks:
       - integration-network
     healthcheck:
