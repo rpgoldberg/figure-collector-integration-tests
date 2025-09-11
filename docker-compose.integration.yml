@@ -42,6 +42,7 @@ services:
       - SCRAPER_SERVICE_URL=http://scraper-test:3005
       - VERSION_MANAGER_URL=http://version-manager-test:3006
       - JWT_SECRET=test-jwt-secret-for-integration-tests
+      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
     depends_on:
       mongodb-test:
         condition: service_healthy
@@ -57,7 +58,6 @@ services:
       timeout: 10s
       retries: 6
       start_period: 30s
-    command: ["npm", "start"]
 
   # Version manager - lightweight service for version management
   version-manager-test:
@@ -92,6 +92,7 @@ services:
       - NODE_ENV=test
       - PORT=3005
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
+      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
     networks:
       - integration-network
     healthcheck:
@@ -100,7 +101,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 45s
-    command: ["npm", "start"]
     # Add security and resource constraints for Puppeteer
     cap_add:
       - SYS_ADMIN
@@ -121,6 +121,7 @@ services:
       - PORT=5056
       - REACT_APP_API_URL=http://backend-test:5055
       - REACT_APP_BACKEND_URL=http://backend-test:5055
+      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
     depends_on:
       backend-test:
         condition: service_healthy
@@ -132,7 +133,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    command: ["npm", "start"]
 
   # Integration test runner - executes the actual integration tests
   integration-tests:
