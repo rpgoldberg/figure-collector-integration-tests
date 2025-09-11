@@ -11,7 +11,7 @@ echo "========================================"
 
 # Configuration
 REGISTRY=${REGISTRY:-ghcr.io}
-REGISTRY_ORG=${REGISTRY_ORG:-yourorg}
+REGISTRY_ORG=${REGISTRY_ORG:-rpgoldberg}
 BACKEND_TAG=${BACKEND_TAG:-develop}
 FRONTEND_TAG=${FRONTEND_TAG:-develop}
 SCRAPER_TAG=${SCRAPER_TAG:-develop}
