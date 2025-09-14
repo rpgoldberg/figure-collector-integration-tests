@@ -114,10 +114,11 @@ services:
       - "5056:5056"
     environment:
       - NODE_ENV=test
-      - PORT=5056
+      - FRONTEND_PORT=5056  # nginx listens on this port
+      - BACKEND_HOST=backend-test
+      - BACKEND_PORT=5055
       - REACT_APP_API_URL=http://backend-test:5055
       - REACT_APP_BACKEND_URL=http://backend-test:5055
-      - RUN_SERVER=1  # If using test image, run server instead of tests
     depends_on:
       backend-test:
         condition: service_healthy
