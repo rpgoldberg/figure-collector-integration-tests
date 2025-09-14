@@ -38,24 +38,52 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Clone and build service images locally
-      - name: Build Docker images locally
+      # Pull pre-built images from registry
+      - name: Pull Docker images from registry
         run: |
-          echo "Building service images locally from develop branch..."
+          echo "Pulling pre-built images from GitHub Container Registry..."
 
-          # Clone services from develop branch
-          git clone --depth 1 --branch develop https://github.com/rpgoldberg/figure-collector-backend.git ../backend
-          git clone --depth 1 --branch develop https://github.com/rpgoldberg/figure-collector-frontend.git ../frontend
-          git clone --depth 1 --branch develop https://github.com/rpgoldberg/page-scraper.git ../scraper
-          git clone --depth 1 --branch develop https://github.com/rpgoldberg/version-manager.git ../version
+          # Pull images (page-scraper should now be available!)
+          echo "Attempting to pull page-scraper:develop..."
+          docker pull ${{ env.REGISTRY_URL }}/page-scraper:develop || echo "page-scraper not available yet"
 
-          # Build images
-          docker build -t figure-collector-backend:latest ../backend
-          docker build -t figure-collector-frontend:latest ../frontend
-          docker build -t page-scraper:latest ../scraper
-          docker build -t version-manager:latest ../version
+          # For services without registry images yet, build locally
+          echo "Checking other services..."
+          if ! docker pull ${{ env.REGISTRY_URL }}/figure-collector-backend:develop 2>/dev/null; then
+            echo "Backend not in registry, building locally..."
+            git clone --depth 1 --branch develop https://github.com/rpgoldberg/figure-collector-backend.git ../backend
+            docker build -t figure-collector-backend:latest ../backend
+          else
+            docker tag ${{ env.REGISTRY_URL }}/figure-collector-backend:develop figure-collector-backend:latest
+          fi
 
-          # List built images
+          if ! docker pull ${{ env.REGISTRY_URL }}/figure-collector-frontend:develop 2>/dev/null; then
+            echo "Frontend not in registry, building locally..."
+            git clone --depth 1 --branch develop https://github.com/rpgoldberg/figure-collector-frontend.git ../frontend
+            docker build -t figure-collector-frontend:latest ../frontend
+          else
+            docker tag ${{ env.REGISTRY_URL }}/figure-collector-frontend:develop figure-collector-frontend:latest
+          fi
+
+          if docker pull ${{ env.REGISTRY_URL }}/page-scraper:develop 2>/dev/null; then
+            echo "✓ Page-scraper pulled from registry!"
+            docker tag ${{ env.REGISTRY_URL }}/page-scraper:develop page-scraper:latest
+          else
+            echo "Page-scraper not in registry, building locally..."
+            git clone --depth 1 --branch develop https://github.com/rpgoldberg/page-scraper.git ../scraper
+            docker build -t page-scraper:latest ../scraper
+          fi
+
+          if ! docker pull ${{ env.REGISTRY_URL }}/version-manager:develop 2>/dev/null; then
+            echo "Version-manager not in registry, building locally..."
+            git clone --depth 1 --branch develop https://github.com/rpgoldberg/version-manager.git ../version
+            docker build -t version-manager:latest ../version
+          else
+            docker tag ${{ env.REGISTRY_URL }}/version-manager:develop version-manager:latest
+          fi
+
+          # List available images
+          echo "Available Docker images:"
           docker images | grep -E "figure-collector|page-scraper|version-manager"
 
       # Validate Docker Compose configurations
