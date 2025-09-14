@@ -91,7 +91,7 @@ jobs:
         run: |
           # Export service URLs for tests (using test ports from docker-compose.prebuilt.yml)
           export BACKEND_URL=http://localhost:5055
-          export FRONTEND_URL=http://localhost:3008
+          export FRONTEND_URL=http://localhost:5056
           export SCRAPER_URL=http://localhost:3005
           export VERSION_MANAGER_URL=http://localhost:3006
           export MONGODB_URI=mongodb://testuser:testpass@localhost:27018/figure_collector_test?authSource=admin
