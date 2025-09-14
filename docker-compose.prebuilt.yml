@@ -32,7 +32,7 @@ services:
 
   # Backend service - using pre-built image
   backend-test:
-    image: ${REGISTRY:-ghcr.io}/${REGISTRY_ORG:-rpgoldberg}/figure-collector-backend:${BACKEND_TAG:-develop}
+    image: figure-collector-backend:${BACKEND_TAG:-latest}
     container_name: backend-test
     ports:
       - "5055:5055"
@@ -64,7 +64,7 @@ services:
 
   # Version manager - using pre-built image
   version-manager-test:
-    image: ${REGISTRY:-ghcr.io}/${REGISTRY_ORG:-rpgoldberg}/figure-collector-version-manager:${VERSION_TAG:-develop}
+    image: version-manager:${VERSION_TAG:-latest}
     container_name: version-manager-test
     ports:
       - "3006:3006"
@@ -83,7 +83,7 @@ services:
 
   # Page scraper - using pre-built image
   scraper-test:
-    image: ${REGISTRY:-ghcr.io}/${REGISTRY_ORG:-rpgoldberg}/figure-collector-page-scraper:${SCRAPER_TAG:-develop}
+    image: page-scraper:${SCRAPER_TAG:-latest}
     container_name: scraper-test
     ports:
       - "3005:3005"
@@ -108,7 +108,7 @@ services:
 
   # Frontend - using pre-built image
   frontend-test:
-    image: ${REGISTRY:-ghcr.io}/${REGISTRY_ORG:-rpgoldberg}/figure-collector-frontend:${FRONTEND_TAG:-develop}
+    image: figure-collector-frontend:${FRONTEND_TAG:-latest}
     container_name: frontend-test
     ports:
       - "5056:5056"

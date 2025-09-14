@@ -38,20 +38,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Pull pre-built images from develop branch
-      - name: Pull Docker images
+      # Clone and build service images locally
+      - name: Build Docker images locally
         run: |
-          echo "Pulling pre-built images from registry..."
-          docker pull ${{ env.REGISTRY_URL }}/figure-collector-backend:develop || true
-          docker pull ${{ env.REGISTRY_URL }}/figure-collector-frontend:develop || true
-          docker pull ${{ env.REGISTRY_URL }}/page-scraper:develop || true
-          docker pull ${{ env.REGISTRY_URL }}/version-manager:develop || true
+          echo "Building service images locally from develop branch..."
 
-          # Tag images for docker-compose
-          docker tag ${{ env.REGISTRY_URL }}/figure-collector-backend:develop figure-collector-backend:latest || true
-          docker tag ${{ env.REGISTRY_URL }}/figure-collector-frontend:develop figure-collector-frontend:latest || true
-          docker tag ${{ env.REGISTRY_URL }}/page-scraper:develop page-scraper:latest || true
-          docker tag ${{ env.REGISTRY_URL }}/version-manager:develop version-manager:latest || true
+          # Clone services from develop branch
+          git clone --depth 1 --branch develop https://github.com/rpgoldberg/figure-collector-backend.git ../backend
+          git clone --depth 1 --branch develop https://github.com/rpgoldberg/figure-collector-frontend.git ../frontend
+          git clone --depth 1 --branch develop https://github.com/rpgoldberg/page-scraper.git ../scraper
+          git clone --depth 1 --branch develop https://github.com/rpgoldberg/version-manager.git ../version
+
+          # Build images
+          docker build -t figure-collector-backend:latest ../backend
+          docker build -t figure-collector-frontend:latest ../frontend
+          docker build -t page-scraper:latest ../scraper
+          docker build -t version-manager:latest ../version
+
+          # List built images
+          docker images | grep -E "figure-collector|page-scraper|version-manager"
 
       # Validate Docker Compose configurations
       - name: Validate Docker Compose files
