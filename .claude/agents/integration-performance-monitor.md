@@ -1,8 +1,8 @@
 ---
 name: integration-performance-monitor
 description: "Performance tracking specialist. Monitors cross-service latency and throughput."
-model: sonnet
 tools: Bash, Read, Write, Grep
+model: sonnet
 ---
 
 You are the performance monitor. Atomic task: track integration performance.

@@ -1,36 +1,117 @@
-name: Integration Tests
+name: Integration Tests CI
 
 on:
   push:
-    branches: [develop, main]
+    branches: [develop, main, feature/*]
   pull_request:
     branches: [develop, main]
   workflow_dispatch:
+
+env:
+  REGISTRY_URL: ghcr.io/rpgoldberg
+  NODE_ENV: test
 
 jobs:
   integration-test:
     name: Run Integration Tests
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
-      - name: Run unit tests
-        run: npm test || true
-      
-      # Docker-based integration tests would go here
-      # For now, just validate the setup
+
+      # Login to GitHub Container Registry to pull images
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pull pre-built images from develop branch
+      - name: Pull Docker images
+        run: |
+          echo "Pulling pre-built images from registry..."
+          docker pull ${{ env.REGISTRY_URL }}/figure-collector-backend:develop || true
+          docker pull ${{ env.REGISTRY_URL }}/figure-collector-frontend:develop || true
+          docker pull ${{ env.REGISTRY_URL }}/page-scraper:develop || true
+          docker pull ${{ env.REGISTRY_URL }}/version-manager:develop || true
+
+          # Tag images for docker-compose
+          docker tag ${{ env.REGISTRY_URL }}/figure-collector-backend:develop figure-collector-backend:latest || true
+          docker tag ${{ env.REGISTRY_URL }}/figure-collector-frontend:develop figure-collector-frontend:latest || true
+          docker tag ${{ env.REGISTRY_URL }}/page-scraper:develop page-scraper:latest || true
+          docker tag ${{ env.REGISTRY_URL }}/version-manager:develop version-manager:latest || true
+
+      # Validate Docker Compose configurations
       - name: Validate Docker Compose files
         run: |
           docker compose -f docker-compose.integration.yml config
           docker compose -f docker-compose.prebuilt.yml config
+
+      # Start services using pre-built images
+      - name: Start services
+        run: |
+          docker compose -f docker-compose.prebuilt.yml up -d
+
+          # Wait for services to be healthy
+          echo "Waiting for services to be ready..."
+          sleep 30
+
+          # Check service health
+          docker compose -f docker-compose.prebuilt.yml ps
+
+          # Check logs if needed for debugging
+          docker compose -f docker-compose.prebuilt.yml logs --tail=50
+
+      # Run integration tests
+      - name: Run integration tests
+        run: |
+          # Export service URLs for tests (using test ports from docker-compose.prebuilt.yml)
+          export BACKEND_URL=http://localhost:5055
+          export FRONTEND_URL=http://localhost:3008
+          export SCRAPER_URL=http://localhost:3005
+          export VERSION_MANAGER_URL=http://localhost:3006
+          export MONGODB_URI=mongodb://testuser:testpass@localhost:27018/figure_collector_test?authSource=admin
+
+          # Run the integration test suite
+          npm run test:integration:full
+        env:
+          CI: true
+          NODE_ENV: test
+
+      # Collect test results
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: |
+            test-results/
+            coverage/
+
+      # Cleanup
+      - name: Stop services
+        if: always()
+        run: |
+          docker compose -f docker-compose.prebuilt.yml down -v
+          docker system prune -f
+
+      # Report test status
+      - name: Test Summary
+        if: always()
+        run: |
+          if [ -f test-results/integration-test-results.xml ]; then
+            echo "Test results generated successfully"
+          else
+            echo "Warning: Test results file not found"
+          fi
