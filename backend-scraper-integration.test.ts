@@ -13,16 +13,19 @@ describe('Backend → Scraper Integration Tests', () => {
   let authenticatedAPI: any;
 
   beforeAll(async () => {
-    // Reset browser pool before starting scraper-heavy tests
+    // Authenticate first
+    userToken = await authenticateUser('USER1', TEST_USERS.USER1.password);
+    authenticatedAPI = getAuthenticatedAPI('USER1');
+
+    // Reset browser pool before starting scraper-heavy tests (now with authentication)
     try {
-      await scraperAPI.post('/reset-pool');
+      await scraperAPI.post('/reset-pool', {}, {
+        headers: { Authorization: `Bearer ${userToken}` }
+      });
       console.log('🔄 Browser pool reset for scraper tests');
     } catch (error) {
       console.warn('⚠️  Could not reset browser pool:', error.message);
     }
-    
-    userToken = await authenticateUser('USER1', TEST_USERS.USER1.password);
-    authenticatedAPI = getAuthenticatedAPI('USER1');
   });
 
   describe('MFC Scraping Workflow', () => {
