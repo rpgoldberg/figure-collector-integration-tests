@@ -10,7 +10,6 @@ on:
 env:
   REGISTRY_URL: ghcr.io/rpgoldberg
   NODE_ENV: test
-  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
 
 jobs:
   integration-test:
@@ -32,7 +31,7 @@ jobs:
         run: npm cache clean --force
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund --verbose
+        run: npm ci --no-audit --no-fund
         timeout-minutes: 5
 
       # Login to GitHub Container Registry to pull images
