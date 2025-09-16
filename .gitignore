@@ -33,3 +33,6 @@ Thumbs.db
 # Exclude only personal Claude preferences
 .claude/personal/
 .claude/user-*/
+# Claude-specific files
+.claude/
+CLAUDE.md
