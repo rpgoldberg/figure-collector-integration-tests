@@ -38,32 +38,54 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Pull pre-built images from registry
-      - name: Pull Docker images from registry
+      # Determine which image tags to use based on context
+      - name: Set image tags
         run: |
-          echo "Pulling all service images from GitHub Container Registry..."
+          # Default to develop tags
+          BACKEND_TAG="develop"
+          FRONTEND_TAG="develop"
+          SCRAPER_TAG="develop"
+          VERSION_TAG="develop"
 
-          # Pull all images from registry
-          echo "Pulling figure-collector-backend:develop..."
-          docker pull ${{ env.REGISTRY_URL }}/figure-collector-backend:develop
-          docker tag ${{ env.REGISTRY_URL }}/figure-collector-backend:develop figure-collector-backend:latest
+          # For PRs, check if PR-specific images exist
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            echo "PR #${PR_NUMBER} detected, checking for PR-specific images..."
 
-          echo "Pulling figure-collector-frontend:develop..."
-          docker pull ${{ env.REGISTRY_URL }}/figure-collector-frontend:develop
-          docker tag ${{ env.REGISTRY_URL }}/figure-collector-frontend:develop figure-collector-frontend:latest
+            # Check if PR images exist (optional - can fallback to branch)
+            if docker manifest inspect ${{ env.REGISTRY_URL }}/figure-collector-backend:pr-${PR_NUMBER} > /dev/null 2>&1; then
+              BACKEND_TAG="pr-${PR_NUMBER}"
+              echo "Found PR-specific backend image: pr-${PR_NUMBER}"
+            fi
+          fi
 
-          echo "Pulling page-scraper:develop..."
-          docker pull ${{ env.REGISTRY_URL }}/page-scraper:develop
-          docker tag ${{ env.REGISTRY_URL }}/page-scraper:develop page-scraper:latest
+          # For feature branches, use branch name if images exist
+          if [[ "${{ github.ref }}" == refs/heads/feature/* ]]; then
+            BRANCH_NAME="${{ github.ref_name }}"
+            BRANCH_TAG="${BRANCH_NAME//\//-}" # Replace / with -
+            echo "Feature branch detected: ${BRANCH_NAME}"
 
-          echo "Pulling version-manager:develop..."
-          docker pull ${{ env.REGISTRY_URL }}/version-manager:develop
-          docker tag ${{ env.REGISTRY_URL }}/version-manager:develop version-manager:latest
+            # Check if branch-specific images exist
+            if docker manifest inspect ${{ env.REGISTRY_URL }}/figure-collector-backend:${BRANCH_TAG} > /dev/null 2>&1; then
+              BACKEND_TAG="${BRANCH_TAG}"
+              FRONTEND_TAG="${BRANCH_TAG}"
+              SCRAPER_TAG="${BRANCH_TAG}"
+              VERSION_TAG="${BRANCH_TAG}"
+              echo "Using branch-specific images: ${BRANCH_TAG}"
+            fi
+          fi
 
-          # List available images
-          echo ""
-          echo "✅ All images pulled successfully from registry:"
-          docker images | grep -E "figure-collector|page-scraper|version-manager" | head -10
+          # Export tags for use in next steps
+          echo "BACKEND_TAG=${BACKEND_TAG}" >> $GITHUB_ENV
+          echo "FRONTEND_TAG=${FRONTEND_TAG}" >> $GITHUB_ENV
+          echo "SCRAPER_TAG=${SCRAPER_TAG}" >> $GITHUB_ENV
+          echo "VERSION_TAG=${VERSION_TAG}" >> $GITHUB_ENV
+
+          echo "Using image tags:"
+          echo "  Backend:  ${BACKEND_TAG}"
+          echo "  Frontend: ${FRONTEND_TAG}"
+          echo "  Scraper:  ${SCRAPER_TAG}"
+          echo "  Version:  ${VERSION_TAG}"
 
       # Validate Docker Compose configurations
       - name: Validate Docker Compose files
@@ -71,9 +93,18 @@ jobs:
           docker compose -f docker-compose.integration.yml config
           docker compose -f docker-compose.prebuilt.yml config
 
-      # Start services using pre-built images
+      # Start services using pre-built images with specified tags
       - name: Start services
         run: |
+          # Export tags for docker-compose
+          export BACKEND_TAG FRONTEND_TAG SCRAPER_TAG VERSION_TAG
+
+          echo "Starting services with tags:"
+          echo "  BACKEND_TAG=${BACKEND_TAG}"
+          echo "  FRONTEND_TAG=${FRONTEND_TAG}"
+          echo "  SCRAPER_TAG=${SCRAPER_TAG}"
+          echo "  VERSION_TAG=${VERSION_TAG}"
+
           docker compose -f docker-compose.prebuilt.yml up -d
 
           # Wait for services to be healthy
@@ -116,6 +147,8 @@ jobs:
       - name: Stop services
         if: always()
         run: |
+          # Export tags for docker-compose (needed for down command)
+          export BACKEND_TAG FRONTEND_TAG SCRAPER_TAG VERSION_TAG
           docker compose -f docker-compose.prebuilt.yml down -v
           docker system prune -f
 
