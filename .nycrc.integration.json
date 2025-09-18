@@ -1,0 +1,64 @@
+{
+  "extends": "@istanbuljs/nyc-config-typescript",
+  "all": false,
+  "check-coverage": false,
+  "reporter": [
+    "html",
+    "lcov", 
+    "text",
+    "json"
+  ],
+  "report-dir": "./integration-test-results/coverage",
+  "temp-dir": "./integration-test-results/.nyc_output",
+  "cache-dir": "./integration-test-results/.nyc_cache",
+  "exclude": [
+    "**/*.d.ts",
+    "**/node_modules/**",
+    "**/coverage/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/*.test.ts",
+    "**/*.test.js",
+    "**/*.spec.ts",
+    "**/*.spec.js",
+    "**/test/**",
+    "**/tests/**",
+    "**/__tests__/**",
+    "**/__mocks__/**",
+    "**/jest.config.js",
+    "**/webpack.config.js",
+    "**/rollup.config.js",
+    "**/babel.config.js",
+    "**/.eslintrc.js"
+  ],
+  "include": [
+    "**/src/**/*.ts",
+    "**/src/**/*.tsx",
+    "**/src/**/*.js",
+    "**/src/**/*.jsx",
+    "**/app.js",
+    "**/index.js"
+  ],
+  "extension": [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx"
+  ],
+  "require": [
+    "ts-node/register"
+  ],
+  "source-map": true,
+  "instrument": true,
+  "produce-source-map": true,
+  "branches": 80,
+  "lines": 80,
+  "functions": 80,
+  "statements": 80,
+  "watermarks": {
+    "lines": [70, 90],
+    "functions": [70, 90], 
+    "branches": [70, 90],
+    "statements": [70, 90]
+  }
+}

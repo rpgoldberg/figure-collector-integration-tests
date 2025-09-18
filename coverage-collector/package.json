@@ -1,0 +1,23 @@
+{
+  "name": "integration-coverage-collector",
+  "version": "1.0.0",
+  "description": "Collects and aggregates code coverage from all services during integration testing",
+  "main": "collect-coverage.js",
+  "scripts": {
+    "collect": "node collect-coverage.js",
+    "merge": "node merge-coverage.js",
+    "report": "nyc report --reporter=html --reporter=lcov --reporter=text",
+    "clean": "rm -rf ./aggregated-coverage ./reports"
+  },
+  "dependencies": {
+    "nyc": "^15.1.0",
+    "istanbul-lib-coverage": "^3.2.0",
+    "istanbul-lib-report": "^3.0.1",
+    "istanbul-reports": "^3.1.6",
+    "glob": "^10.3.4",
+    "fs-extra": "^11.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.6.0"
+  }
+}
