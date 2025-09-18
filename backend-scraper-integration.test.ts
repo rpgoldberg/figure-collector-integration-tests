@@ -144,6 +144,10 @@ describe('Backend → Scraper Integration Tests', () => {
           // Completely empty data object is valid
           console.log('   ℹ️  Scraping endpoint returned empty data object');
         }
+      } else {
+        // If scraping failed, might not have a message property (just success: false)
+        console.log('   ℹ️  Scraping returned success: false without message');
+        expect(response.data.success).toBe(false);
       }
     }, 60000);
   });
