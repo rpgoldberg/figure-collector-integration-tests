@@ -12,13 +12,26 @@ echo "========================================"
 # Configuration
 REGISTRY=${REGISTRY:-ghcr.io}
 REGISTRY_ORG=${REGISTRY_ORG:-rpgoldberg}
-BACKEND_TAG=${BACKEND_TAG:-develop}
-FRONTEND_TAG=${FRONTEND_TAG:-develop}
-SCRAPER_TAG=${SCRAPER_TAG:-develop}
-VERSION_TAG=${VERSION_TAG:-develop}
+# Don't set defaults here - let docker-compose.prebuilt.yml defaults apply
+# unless explicitly overridden via environment variables
+BACKEND_TAG=${BACKEND_TAG}
+FRONTEND_TAG=${FRONTEND_TAG}
+SCRAPER_TAG=${SCRAPER_TAG}
+VERSION_TAG=${VERSION_TAG}
 
 # Export for docker-compose
 export REGISTRY REGISTRY_ORG BACKEND_TAG FRONTEND_TAG SCRAPER_TAG VERSION_TAG
+
+# Display which images will be used (show defaults if not overridden)
+echo ""
+echo "Using the following image tags:"
+echo "  Backend:         ${REGISTRY}/${REGISTRY_ORG}/figure-collector-backend:${BACKEND_TAG:-develop}"
+echo "  Frontend:        ${REGISTRY}/${REGISTRY_ORG}/figure-collector-frontend:${FRONTEND_TAG:-develop}"
+echo "  Page Scraper:    ${REGISTRY}/${REGISTRY_ORG}/page-scraper:${SCRAPER_TAG:-develop}"
+echo "  Version Manager: ${REGISTRY}/${REGISTRY_ORG}/version-manager:${VERSION_TAG:-develop}"
+echo ""
+echo "To override, use: BACKEND_TAG=test-2.0.0 FRONTEND_TAG=test-2.0.0 ./run-with-prebuilt.sh"
+echo ""
 
 # Function to cleanup on exit
 cleanup() {
