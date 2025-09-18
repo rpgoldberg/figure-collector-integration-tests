@@ -121,10 +121,10 @@ describe('Service Health & Connectivity Tests', () => {
       });
 
       expect(figuresResponse.status).toBe(200);
-      // Check that either we have test data or at least the response is an array
-      // (test data might be cleared by other tests running concurrently)
+      // Check that the response is an array (it may be empty since this is a test environment)
       expect(Array.isArray(figuresResponse.data.data)).toBe(true);
-      console.log(`   ℹ️  Found ${figuresResponse.data.data.length} figures in MongoDB`);
+      // In integration tests, figures array can be empty or populated
+      console.log(`   ℹ️  Found ${figuresResponse.data.data.length} figures in MongoDB (0 is valid in test environment)`);
     });
   });
 
