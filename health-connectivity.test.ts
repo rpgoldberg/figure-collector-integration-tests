@@ -224,8 +224,17 @@ describe('Service Health & Connectivity Tests', () => {
       }
       
       // Test invalid request to scraper
+      // Get a token first for testing
+      const loginRes = await backendAPI.post('/auth/login', {
+        email: 'test1@example.com',
+        password: 'testpass123'
+      });
+      const token = loginRes.data.data.accessToken;
+
       try {
-        await scraperAPI.post('/scrape/mfc', {});
+        await scraperAPI.post('/scrape/mfc', {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
       } catch (error: any) {
         expect(error.response?.status).toBe(400);
         expect(error.response?.data).toHaveProperty('success', false);
