@@ -104,6 +104,14 @@ jobs:
       # Start services using pre-built images with specified tags
       - name: Start services
         run: |
+          # Create directories that will be mounted as volumes
+          # These need to exist and be writable before container starts
+          mkdir -p test-results
+          mkdir -p integration-test-results
+          chmod -R 777 test-results
+          chmod -R 777 integration-test-results
+          echo "Created volume mount directories with full permissions"
+
           # Export tags for docker-compose
           export BACKEND_TAG FRONTEND_TAG SCRAPER_TAG VERSION_TAG
 
@@ -129,19 +137,21 @@ jobs:
       - name: Run integration tests
         timeout-minutes: 10
         run: |
-          # Export service URLs for tests (using test ports from docker-compose.prebuilt.yml)
-          export BACKEND_URL=http://localhost:5055
-          export FRONTEND_URL=http://localhost:5056
-          export SCRAPER_URL=http://localhost:3005
-          export VERSION_MANAGER_URL=http://localhost:3006
-          export MONGODB_URI=mongodb://testuser:testpass@localhost:27018/figure_collector_test?authSource=admin
+          # Export tags for docker-compose
+          export BACKEND_TAG FRONTEND_TAG SCRAPER_TAG VERSION_TAG
 
-          # Ensure test directories exist and are writable
-          mkdir -p test-results
-          mkdir -p coverage
+          # Run integration tests container
+          # This will use the volumes we created with proper permissions
+          docker compose -f docker-compose.prebuilt.yml run --rm integration-tests
 
-          # Run the integration test suite
-          npm run test:integration:full
+          # Check exit code
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ Integration tests passed!"
+          else
+            echo "❌ Integration tests failed with exit code: $EXIT_CODE"
+            exit $EXIT_CODE
+          fi
         env:
           CI: true
           NODE_ENV: test
