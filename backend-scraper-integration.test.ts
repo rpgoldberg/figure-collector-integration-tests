@@ -32,12 +32,13 @@ describe('Backend → Scraper Integration Tests', () => {
     test('Complete MFC scraping workflow through backend', async () => {
       // Test the full workflow: Backend receives figure request → calls scraper → saves figure
       
+      const uniqueId = Date.now() + Math.random().toString(36).substr(2, 9);
       const figureData = {
         manufacturer: 'Test Manufacturer',
         name: 'Test Figure',
         scale: '1/8',
         location: 'Test Shelf',
-        boxNumber: 'TEST001',
+        boxNumber: `TEST-MFC-${uniqueId}`,
         mfcLink: 'https://myfigurecollection.net/item/test123'
       };
 
@@ -106,12 +107,13 @@ describe('Backend → Scraper Integration Tests', () => {
 
     test('Backend handles scraper response correctly', async () => {
       // Test that backend creates figure even if scraper has issues
+      const uniqueId = Date.now() + Math.random().toString(36).substr(2, 9);
       const figureData = {
         manufacturer: 'Good Smile Company',
         name: 'Hatsune Miku Test',
         scale: '1/8',
         location: 'Test Location',
-        boxNumber: 'TEST002',
+        boxNumber: `TEST-SCRAPER-${uniqueId}`,
         mfcLink: 'https://myfigurecollection.net/item/99999'
       };
 
@@ -267,12 +269,13 @@ describe('Backend → Scraper Integration Tests', () => {
 
     test('Backend validates scraped data before saving', async () => {
       // Test that empty manufacturer is properly rejected
+      const uniqueId2 = Date.now() + Math.random().toString(36).substr(2, 9);
       const invalidFigureData = {
         manufacturer: '',  // Empty manufacturer should be rejected
         name: 'Test Figure Name',
         scale: '1/8',
         location: 'Test Location',
-        boxNumber: 'TEST003',
+        boxNumber: `TEST-INVALID-${uniqueId2}`,
         mfcLink: 'https://myfigurecollection.net/item/test789'
       };
 
@@ -286,12 +289,13 @@ describe('Backend → Scraper Integration Tests', () => {
       }
 
       // Now test with valid data
+      const uniqueId = Date.now() + Math.random().toString(36).substr(2, 9);
       const validFigureData = {
         manufacturer: 'Test Manufacturer',
         name: 'Test Figure Name',
         scale: '1/8',
         location: 'Test Location',
-        boxNumber: 'TEST003',
+        boxNumber: `TEST-VALIDATE-${uniqueId}`,
         mfcLink: 'https://myfigurecollection.net/item/test789'
       };
 
@@ -361,12 +365,13 @@ describe('Backend → Scraper Integration Tests', () => {
 
   describe('Data Integration Verification', () => {
     test('Scraped data integrates correctly with figure creation', async () => {
+      const uniqueId = Date.now() + Math.random().toString(36).substr(2, 9);
       const figureData = {
         manufacturer: 'Integration Test Manufacturer',
         name: 'Integration Test Figure',
         scale: '1/8',
         location: 'Integration Test Shelf',
-        boxNumber: 'INTEG001',
+        boxNumber: `INTEG-${uniqueId}`,
         mfcLink: 'https://myfigurecollection.net/item/integration-test'
       };
 
