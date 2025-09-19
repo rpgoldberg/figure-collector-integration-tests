@@ -12,13 +12,12 @@ describe('Frontend Service Registration Integration', () => {
   describe('Service Registration Protocol', () => {
     it('registers frontend service with backend successfully', async () => {
       const registrationData = {
-        serviceName: 'frontend',
         version: '1.0.0',
         name: 'figure-collector-frontend'
       };
 
       try {
-        const response = await axios.post(`${backendUrl}/register-service`, registrationData, {
+        const response = await axios.post(`${backendUrl}/register-frontend`, registrationData, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
@@ -36,19 +35,18 @@ describe('Frontend Service Registration Integration', () => {
 
     it('handles duplicate service registration gracefully', async () => {
       const registrationData = {
-        serviceName: 'frontend',
         version: '1.0.0',
         name: 'figure-collector-frontend'
       };
 
       try {
         // Register twice to test idempotency
-        const firstResponse = await axios.post(`${backendUrl}/register-service`, registrationData, {
+        const firstResponse = await axios.post(`${backendUrl}/register-frontend`, registrationData, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
 
-        const secondResponse = await axios.post(`${backendUrl}/register-service`, registrationData, {
+        const secondResponse = await axios.post(`${backendUrl}/register-frontend`, registrationData, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
@@ -64,12 +62,12 @@ describe('Frontend Service Registration Integration', () => {
 
     it('validates required fields in service registration', async () => {
       const incompleteData = {
-        serviceName: 'frontend'
-        // Missing version and name
+        name: 'frontend'
+        // Missing version
       };
 
       try {
-        const response = await axios.post(`${backendUrl}/register-service`, incompleteData, {
+        const response = await axios.post(`${backendUrl}/register-frontend`, incompleteData, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
@@ -94,12 +92,11 @@ describe('Frontend Service Registration Integration', () => {
     it('retrieves comprehensive version information after registration', async () => {
       // First register the service
       const registrationData = {
-        serviceName: 'frontend',
         version: '1.0.0',
         name: 'figure-collector-frontend'
       };
 
-      await axios.post(`${backendUrl}/register-service`, registrationData, {
+      await axios.post(`${backendUrl}/register-frontend`, registrationData, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 10000
       });
@@ -235,14 +232,12 @@ describe('Frontend Service Registration Integration', () => {
   describe('Service Health Integration', () => {
     it('verifies frontend service health through registration', async () => {
       const registrationData = {
-        serviceName: 'frontend',
         version: '1.0.0',
-        name: 'figure-collector-frontend',
-        status: 'healthy'
+        name: 'figure-collector-frontend'
       };
 
       try {
-        const response = await axios.post(`${backendUrl}/register-service`, registrationData, {
+        const response = await axios.post(`${backendUrl}/register-frontend`, registrationData, {
           headers: { 'Content-Type': 'application/json' },
           timeout: 10000
         });
