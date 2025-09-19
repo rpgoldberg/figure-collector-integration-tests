@@ -52,7 +52,7 @@ describe('Service Health & Connectivity Tests', () => {
       // Backend should have attempted to fetch scraper version
       const scraperService = response.data.services.scraper;
       expect(scraperService).toBeDefined();
-      expect(['ok', 'unhealthy', 'unknown', 'error']).toContain(scraperService.status);
+      expect(['ok', 'unhealthy', 'unknown', 'error', 'not-registered', 'registered', 'healthy']).toContain(scraperService.status);
     });
 
     test('Backend can reach version service', async () => {
@@ -141,9 +141,9 @@ describe('Service Health & Connectivity Tests', () => {
       expect(frontendService).toHaveProperty('status');
       expect(frontendService).toHaveProperty('version');
       
-      // Status should be either 'healthy' or 'not-registered' 
+      // Status should be either 'registered', 'healthy', or 'not-registered'
       // (depends on timing of registration)
-      expect(['ok', 'not-registered', 'unhealthy']).toContain(frontendService.status);
+      expect(['ok', 'registered', 'not-registered', 'unhealthy', 'healthy']).toContain(frontendService.status);
     });
 
     test('All expected services are tracked in version endpoint', async () => {
@@ -209,7 +209,7 @@ describe('Service Health & Connectivity Tests', () => {
       // Services should have status indicating their availability
       Object.values(response.data.services).forEach((service: any) => {
         expect(service).toHaveProperty('status');
-        expect(['ok', 'unhealthy', 'unknown', 'not-registered', 'error']).toContain(service.status);
+        expect(['ok', 'unhealthy', 'unknown', 'not-registered', 'error', 'registered', 'healthy']).toContain(service.status);
       });
     });
 

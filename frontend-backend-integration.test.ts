@@ -296,14 +296,11 @@ describe('Frontend → Backend Integration Tests', () => {
     test('Frontend startup registration with backend', async () => {
       // Simulate frontend registration call
       const registrationData = {
-        serviceName: 'frontend',
         version: '1.0.0',
-        name: 'figure-collector-frontend',
-        status: 'healthy',
-        startupTime: new Date().toISOString()
+        name: 'figure-collector-frontend'
       };
 
-      const response = await backendAPI.post('/register-service', registrationData);
+      const response = await backendAPI.post('/register-frontend', registrationData);
       
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('success', true);

@@ -183,11 +183,9 @@ describe('End-to-End Workflow Tests', () => {
 
       // Step 3: Frontend registration workflow
       console.log('   📝 Testing frontend service registration...');
-      const registrationResponse = await backendAPI.post('/register-service', {
-        serviceName: 'frontend',
+      const registrationResponse = await backendAPI.post('/register-frontend', {
         version: '1.0.0',
-        name: 'figure-collector-frontend-test',
-        status: 'healthy'
+        name: 'figure-collector-frontend-test'
       });
 
       expect(registrationResponse.status).toBe(200);
