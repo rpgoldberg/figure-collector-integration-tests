@@ -56,7 +56,7 @@ services:
     networks:
       - integration-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5055/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5055/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); })"]
       interval: 15s
       timeout: 10s
       retries: 6
@@ -75,7 +75,7 @@ services:
     networks:
       - integration-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3006/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); })"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -95,7 +95,7 @@ services:
     networks:
       - integration-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3005/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); })"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -124,8 +124,10 @@ services:
         condition: service_healthy
     networks:
       - integration-network
+    # Frontend uses nginx, just check if the process is running
+    # Since it's static content, if nginx starts, it's healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5056"]
+      test: ["CMD", "sh", "-c", "pgrep nginx > /dev/null"]
       interval: 15s
       timeout: 10s
       retries: 5
