@@ -165,9 +165,11 @@ services:
         condition: service_healthy
     networks:
       - integration-network
-    volumes:
-      - ./test-results:/app/test-results
-      - ./integration-test-results:/app/integration-test-results
+    # Volumes commented out to avoid permission issues with jest-junit
+    # Test results are written inside the container
+    # volumes:
+    #   - ./test-results:/app/test-results
+    #   - ./integration-test-results:/app/integration-test-results
     command: ["npm", "run", "test:integration"]
 
 volumes:
