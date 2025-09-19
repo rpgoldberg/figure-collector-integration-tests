@@ -11,10 +11,14 @@ WORKDIR /app
 # Update Alpine packages for security
 RUN apk update && apk upgrade && rm -rf /var/cache/apk/*
 
-# Copy node_modules from builder
+# Create non-root user first
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S integration -u 1001
+
+# Copy node_modules from builder (as root for now)
 COPY --from=builder /app/node_modules ./node_modules
 
-# Copy application code and test files
+# Copy application code and test files (as root for now)
 COPY package*.json ./
 COPY tsconfig.test.json ./
 COPY jest.integration.config.js ./
@@ -22,14 +26,13 @@ COPY setup.ts ./
 COPY *.test.ts ./
 COPY init-db.js ./
 
-# Create non-root user first
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S integration -u 1001
+# Create directories for test results
+RUN mkdir -p /app/test-results /app/integration-test-results
 
-# Create directories for test results and set ownership
-RUN mkdir -p /app/test-results /app/integration-test-results && \
-    chown -R integration:nodejs /app && \
-    chmod -R 755 /app/test-results /app/integration-test-results
+# Change ownership of everything to integration user
+RUN chown -R integration:nodejs /app
+
+# Switch to non-root user
 USER integration
 
 # Run integration tests
