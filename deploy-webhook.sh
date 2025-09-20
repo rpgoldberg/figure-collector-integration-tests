@@ -3,9 +3,19 @@
 # Deploy webhook script that runs on the server to trigger Coolify deployment
 # This bypasses Cloudflare by calling Coolify directly from inside the network
 
-SERVICE_UUID="${1:-***REMOVED***}"
-TOKEN="${2:-***REMOVED***}"
+SERVICE_UUID="${1}"
+TOKEN="${2}"
 FORCE="${3:-false}"
+
+if [ -z "$SERVICE_UUID" ] || [ -z "$TOKEN" ]; then
+  echo "❌ Error: Service UUID and Token must be provided as arguments."
+  echo "Usage: $0 <service-uuid> <api-token> [force]"
+  echo ""
+  echo "Or set environment variables:"
+  echo "  COOLIFY_SERVICE_UUID=<uuid>"
+  echo "  COOLIFY_API_TOKEN=<token>"
+  exit 1
+fi
 
 echo "🚀 Triggering deployment for service: $SERVICE_UUID"
 
