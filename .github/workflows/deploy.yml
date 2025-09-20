@@ -1,0 +1,30 @@
+name: Deploy to Coolify
+
+on:
+  workflow_run:
+    workflows: ["Docker Publish"]
+    types:
+      - completed
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Coolify via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            # Trigger Coolify deployment from inside the server
+            curl -X POST "http://localhost:8000/api/v1/deploy" \
+              -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d '{"uuid": "${{ secrets.COOLIFY_APP_UUID }}", "force": false}'

@@ -1,0 +1,32 @@
+{
+  "name": "figure-collector-integration-tests",
+  "version": "1.0.0",
+  "description": "Inter-service integration tests for Figure Collector Services",
+  "scripts": {
+    "test:integration": "jest --config=jest.integration.config.js --verbose",
+    "test:integration:full": "npx jest --config=jest.integration.config.js --verbose --coverage --testTimeout=120000",
+    "test:health": "npx jest --config=jest.integration.config.js --testNamePattern='Health' --verbose",
+    "test:communication": "npx jest --config=jest.integration.config.js --testNamePattern='Communication' --verbose",
+    "test:workflows": "npx jest --config=jest.integration.config.js --testNamePattern='Workflow' --verbose",
+    "test:frontend": "npx jest --config=jest.integration.config.js --testNamePattern='Frontend' --verbose",
+    "test:frontend:auth": "npx jest --config=jest.integration.config.js frontend-authentication-integration.test.ts --verbose",
+    "test:frontend:figures": "npx jest --config=jest.integration.config.js frontend-figure-operations-integration.test.ts --verbose",
+    "test:frontend:e2e": "npx jest --config=jest.integration.config.js frontend-e2e-workflows-integration.test.ts --verbose",
+    "test:watch": "npx jest --config=jest.integration.config.js --watch",
+    "collect:coverage": "node collect-coverage.js"
+  },
+  "dependencies": {
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.6.0",
+    "@types/supertest": "^2.0.12",
+    "axios": "^1.5.0",
+    "bcryptjs": "^3.0.2",
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "mongodb": "^6.1.0",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2",
+    "wait-for-expect": "^3.0.2"
+  }
+}

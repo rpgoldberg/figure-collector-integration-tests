@@ -1,0 +1,177 @@
+version: '3.8'
+
+# This compose file uses pre-built images from the registry
+# instead of building from source
+
+networks:
+  integration-network:
+    driver: bridge
+
+services:
+  # MongoDB remains the same - built locally for test data
+  mongodb-test:
+    image: mongo:latest
+    container_name: mongodb-test
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: testuser
+      MONGO_INITDB_ROOT_PASSWORD: testpass
+      MONGO_INITDB_DATABASE: figure_collector_test
+    ports:
+      - "27018:27017"
+    volumes:
+      - ./init-db.js:/docker-entrypoint-initdb.d/init-db.js
+      - mongodb_test_data:/data/db
+    networks:
+      - integration-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 60s
+
+  # Backend service - using pre-built image
+  backend-test:
+    image: ghcr.io/rpgoldberg/figure-collector-backend:${BACKEND_TAG:-develop}
+    container_name: backend-test
+    ports:
+      - "5055:5055"
+    environment:
+      - NODE_ENV=test
+      - PORT=5055
+      - MONGODB_URI=mongodb://testuser:testpass@mongodb-test:27017/figure_collector_test?authSource=admin
+      - SCRAPER_SERVICE_URL=http://scraper-test:3005
+      - VERSION_MANAGER_URL=http://version-manager-test:3006
+      - JWT_SECRET=test-jwt-secret-for-integration-tests-must-be-32-chars
+      - JWT_REFRESH_SECRET=test-refresh-secret-for-integration-tests-32-chars
+      - SERVICE_AUTH_TOKEN=test-service-auth-token-for-integration
+      - INTEGRATION_TEST=true
+      - RUN_SERVER=1  # If using test image, run server instead of tests
+    depends_on:
+      mongodb-test:
+        condition: service_healthy
+      version-manager-test:
+        condition: service_healthy
+      scraper-test:
+        condition: service_healthy
+    networks:
+      - integration-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5055/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); })"]
+      interval: 15s
+      timeout: 10s
+      retries: 6
+      start_period: 30s
+
+  # Version manager - using pre-built image
+  version-manager-test:
+    image: ghcr.io/rpgoldberg/version-manager:${VERSION_TAG:-develop}
+    container_name: version-manager-test
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=test
+      - PORT=3006
+      - SERVICE_AUTH_TOKEN=test-service-auth-token-for-integration
+      - RUN_SERVER=1  # If using test image, run server instead of tests
+    networks:
+      - integration-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3006/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Page scraper - using pre-built image
+  scraper-test:
+    image: ghcr.io/rpgoldberg/page-scraper:${SCRAPER_TAG:-develop}
+    container_name: scraper-test
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=test
+      - PORT=3005
+      - VERSION_MANAGER_URL=http://version-manager-test:3006
+      - SERVICE_AUTH_TOKEN=test-service-auth-token-for-integration
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
+      - RUN_SERVER=1  # If using test image, run server instead of tests
+    networks:
+      - integration-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3005/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); })"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    shm_size: 2gb
+
+  # Frontend - using pre-built image
+  frontend-test:
+    image: ghcr.io/rpgoldberg/figure-collector-frontend:${FRONTEND_TAG:-develop}
+    container_name: frontend-test
+    ports:
+      - "5056:5056"
+    environment:
+      - NODE_ENV=test
+      - FRONTEND_PORT=5056  # nginx listens on this port
+      - BACKEND_HOST=backend-test
+      - BACKEND_PORT=5055
+      - REACT_APP_API_URL=http://backend-test:5055
+      - REACT_APP_BACKEND_URL=http://backend-test:5055
+    depends_on:
+      backend-test:
+        condition: service_healthy
+    networks:
+      - integration-network
+    # Frontend uses nginx, just check if the process is running
+    # Since it's static content, if nginx starts, it's healthy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "pgrep nginx > /dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Integration test runner - still built locally as it contains test code
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: integration-tests
+    environment:
+      - NODE_ENV=test
+      - BACKEND_URL=http://backend-test:5055
+      - FRONTEND_URL=http://frontend-test:5056
+      - SCRAPER_URL=http://scraper-test:3005
+      - VERSION_MANAGER_URL=http://version-manager-test:3006
+      - MONGODB_URI=mongodb://testuser:testpass@mongodb-test:27017/figure_collector_test?authSource=admin
+      - TEST_TIMEOUT=180000
+      - COVERAGE_ENABLED=true
+    depends_on:
+      backend-test:
+        condition: service_healthy
+      frontend-test:
+        condition: service_healthy
+      scraper-test:
+        condition: service_healthy
+      version-manager-test:
+        condition: service_healthy
+      mongodb-test:
+        condition: service_healthy
+    networks:
+      - integration-network
+    # Volumes commented out to avoid permission issues with jest-junit
+    # Test results are written inside the container
+    # volumes:
+    #   - ./test-results:/app/test-results
+    #   - ./integration-test-results:/app/integration-test-results
+    command: ["npm", "run", "test:integration"]
+
+volumes:
+  mongodb_test_data:
+    driver: local

@@ -1,0 +1,173 @@
+version: '3.8'
+
+networks:
+  integration-network:
+    driver: bridge
+
+services:
+  # MongoDB with test data initialization
+  mongodb-test:
+    image: mongo:latest
+    container_name: mongodb-test
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: testuser
+      MONGO_INITDB_ROOT_PASSWORD: testpass
+      MONGO_INITDB_DATABASE: figure_collector_test
+    ports:
+      - "27018:27017"  # Use different external port to avoid conflicts
+    volumes:
+      - ./init-db.js:/docker-entrypoint-initdb.d/init-db.js
+      - mongodb_test_data:/data/db
+    networks:
+      - integration-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 60s
+
+  # Backend service - built from test Dockerfile with integration dependencies
+  backend-test:
+    build:
+      context: ../figure-collector-backend
+      dockerfile: Dockerfile.test
+    container_name: backend-test
+    ports:
+      - "5055:5055"
+    environment:
+      - NODE_ENV=test
+      - PORT=5055
+      - MONGODB_URI=mongodb://testuser:testpass@mongodb-test:27017/figure_collector_test?authSource=admin
+      - SCRAPER_SERVICE_URL=http://scraper-test:3005
+      - VERSION_MANAGER_URL=http://version-manager-test:3006
+      - JWT_SECRET=test-jwt-secret-for-integration-tests-must-be-32-chars
+      - JWT_REFRESH_SECRET=test-refresh-secret-for-integration-tests-32-chars
+      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
+    depends_on:
+      mongodb-test:
+        condition: service_healthy
+      version-manager-test:
+        condition: service_healthy
+      scraper-test:
+        condition: service_healthy
+    networks:
+      - integration-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5055/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 6
+      start_period: 30s
+
+  # Version manager - lightweight service for version management
+  version-manager-test:
+    build:
+      context: ../version-manager
+      dockerfile: Dockerfile.test
+    container_name: version-manager-test
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=test
+      - PORT=3006
+      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
+    networks:
+      - integration-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Page scraper service - web scraping with Puppeteer
+  scraper-test:
+    build:
+      context: ../page-scraper
+      dockerfile: Dockerfile.test
+    container_name: scraper-test
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=test
+      - PORT=3005
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
+      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
+    networks:
+      - integration-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    # Add security and resource constraints for Puppeteer
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    shm_size: 2gb
+
+  # Frontend service - React application with API proxy
+  frontend-test:
+    build:
+      context: ../figure-collector-frontend
+      dockerfile: Dockerfile.test
+    container_name: frontend-test
+    ports:
+      - "5056:5056"
+    environment:
+      - NODE_ENV=test
+      - PORT=5056
+      - REACT_APP_API_URL=http://backend-test:5055
+      - REACT_APP_BACKEND_URL=http://backend-test:5055
+      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
+    depends_on:
+      backend-test:
+        condition: service_healthy
+    networks:
+      - integration-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5056"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Integration test runner - executes the actual integration tests
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: integration-tests
+    environment:
+      - NODE_ENV=test
+      - BACKEND_URL=http://backend-test:5055
+      - FRONTEND_URL=http://frontend-test:5056
+      - SCRAPER_URL=http://scraper-test:3005
+      - VERSION_MANAGER_URL=http://version-manager-test:3006
+      - MONGODB_URI=mongodb://testuser:testpass@mongodb-test:27017/figure_collector_test?authSource=admin
+      - TEST_TIMEOUT=180000
+      - COVERAGE_ENABLED=true
+    depends_on:
+      backend-test:
+        condition: service_healthy
+      frontend-test:
+        condition: service_healthy
+      scraper-test:
+        condition: service_healthy
+      version-manager-test:
+        condition: service_healthy
+      mongodb-test:
+        condition: service_healthy
+    networks:
+      - integration-network
+    volumes:
+      - ./test-results:/app/test-results
+      - ./integration-test-results:/app/integration-test-results
+    command: ["npm", "run", "test:integration"]
+
+volumes:
+  mongodb_test_data:
+    driver: local
