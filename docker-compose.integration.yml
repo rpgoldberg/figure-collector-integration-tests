@@ -31,7 +31,8 @@ services:
   backend-test:
     build:
       context: ../figure-collector-backend
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile
+      target: test
     container_name: backend-test
     ports:
       - "5055:5055"
@@ -64,7 +65,8 @@ services:
   version-manager-test:
     build:
       context: ../version-manager
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile
+      target: test
     container_name: version-manager-test
     ports:
       - "3006:3006"
@@ -85,7 +87,8 @@ services:
   scraper-test:
     build:
       context: ../page-scraper
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile
+      target: test
     container_name: scraper-test
     ports:
       - "3005:3005"
@@ -113,7 +116,8 @@ services:
   frontend-test:
     build:
       context: ../figure-collector-frontend
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile
+      target: test
     container_name: frontend-test
     ports:
       - "5056:5056"
