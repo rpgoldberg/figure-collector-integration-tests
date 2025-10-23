@@ -9,6 +9,16 @@ module.exports = {
     '<rootDir>/tests/**/*.test.ts',
     '<rootDir>/tests/**/*.test.js'
   ],
+
+  // Exclude config files and other non-test files
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/coverage/',
+    '/test-results/',
+    '/integration-test-results/',
+    'jest\\.config.*\\.js$',  // Exclude all jest config files
+    '\\.config\\.test\\.js$'  // Exclude any *.config.test.js files
+  ],
   
   // Setup files
   setupFilesAfterEnv: [
