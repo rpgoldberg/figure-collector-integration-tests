@@ -27,12 +27,12 @@ services:
       retries: 8
       start_period: 60s
 
-  # Backend service - built from test Dockerfile with integration dependencies
+  # Backend service - built from production Dockerfile with test environment
   backend-test:
     build:
       context: ../figure-collector-backend
       dockerfile: Dockerfile
-      target: test
+      target: production
     container_name: backend-test
     ports:
       - "5055:5055"
@@ -44,7 +44,6 @@ services:
       - VERSION_MANAGER_URL=http://version-manager-test:3006
       - JWT_SECRET=test-jwt-secret-for-integration-tests-must-be-32-chars
       - JWT_REFRESH_SECRET=test-refresh-secret-for-integration-tests-32-chars
-      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
     depends_on:
       mongodb-test:
         condition: service_healthy
@@ -55,7 +54,7 @@ services:
     networks:
       - integration-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5055/health"]
+      test: ["CMD", "node", "-e", "const req = require('http').get('http://localhost:5055/health', { timeout: 5000 }, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('timeout', () => { req.destroy(); process.exit(1); }); req.on('error', () => process.exit(1));"]
       interval: 15s
       timeout: 10s
       retries: 6
@@ -66,18 +65,17 @@ services:
     build:
       context: ../version-manager
       dockerfile: Dockerfile
-      target: test
+      target: production
     container_name: version-manager-test
     ports:
       - "3006:3006"
     environment:
       - NODE_ENV=test
       - PORT=3006
-      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
     networks:
       - integration-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3006/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -88,7 +86,7 @@ services:
     build:
       context: ../page-scraper
       dockerfile: Dockerfile
-      target: test
+      target: production
     container_name: scraper-test
     ports:
       - "3005:3005"
@@ -96,11 +94,10 @@ services:
       - NODE_ENV=test
       - PORT=3005
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
-      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
     networks:
       - integration-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3005/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -112,28 +109,28 @@ services:
       - seccomp:unconfined
     shm_size: 2gb
 
-  # Frontend service - React application with API proxy
+  # Frontend service - React application with nginx server
   frontend-test:
     build:
       context: ../figure-collector-frontend
       dockerfile: Dockerfile
-      target: test
+      target: production
+      args:
+        REACT_APP_API_URL: http://backend-test:5055
     container_name: frontend-test
     ports:
-      - "5056:5056"
+      - "5056:80"
     environment:
-      - NODE_ENV=test
-      - PORT=5056
-      - REACT_APP_API_URL=http://backend-test:5055
-      - REACT_APP_BACKEND_URL=http://backend-test:5055
-      - RUN_SERVER=1  # Tell the container to start the service instead of running tests
+      - BACKEND_HOST=backend-test
+      - BACKEND_PORT=5055
+      - FRONTEND_PORT=80
     depends_on:
       backend-test:
         condition: service_healthy
     networks:
       - integration-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5056"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:80', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -148,7 +145,7 @@ services:
     environment:
       - NODE_ENV=test
       - BACKEND_URL=http://backend-test:5055
-      - FRONTEND_URL=http://frontend-test:5056
+      - FRONTEND_URL=http://frontend-test:80
       - SCRAPER_URL=http://scraper-test:3005
       - VERSION_MANAGER_URL=http://version-manager-test:3006
       - MONGODB_URI=mongodb://testuser:testpass@mongodb-test:27017/figure_collector_test?authSource=admin

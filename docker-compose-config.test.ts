@@ -24,11 +24,11 @@ describe('docker-compose.integration.yml Configuration', () => {
           expect(service.build.dockerfile).toBe('Dockerfile');
         });
 
-        it('should specify target: test for multi-stage build', () => {
+        it('should specify target: production for multi-stage build', () => {
           const service = composeConfig.services[serviceName];
           expect(service).toBeDefined();
           expect(service.build).toBeDefined();
-          expect(service.build.target).toBe('test');
+          expect(service.build.target).toBe('production');
         });
       });
     });
