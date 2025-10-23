@@ -44,6 +44,7 @@ services:
       - VERSION_MANAGER_URL=http://version-manager-test:3006
       - JWT_SECRET=test-jwt-secret-for-integration-tests-must-be-32-chars
       - JWT_REFRESH_SECRET=test-refresh-secret-for-integration-tests-32-chars
+      - SERVICE_AUTH_TOKEN=test-service-auth-token-for-integration
     depends_on:
       mongodb-test:
         condition: service_healthy
@@ -72,6 +73,7 @@ services:
     environment:
       - NODE_ENV=test
       - PORT=3006
+      - SERVICE_AUTH_TOKEN=test-service-auth-token-for-integration
     networks:
       - integration-network
     healthcheck:
@@ -93,6 +95,8 @@ services:
     environment:
       - NODE_ENV=test
       - PORT=3005
+      - VERSION_MANAGER_URL=http://version-manager-test:3006
+      - SERVICE_AUTH_TOKEN=test-service-auth-token-for-integration
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
     networks:
       - integration-network
