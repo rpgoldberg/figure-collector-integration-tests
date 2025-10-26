@@ -24,6 +24,7 @@ COPY tsconfig.test.json ./
 COPY jest.integration.config.js ./
 COPY setup.ts ./
 COPY *.test.ts ./
+COPY docker-compose*.yml ./
 COPY init-db.js ./
 
 # Create directories for test results
