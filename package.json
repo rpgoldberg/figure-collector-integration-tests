@@ -1,6 +1,6 @@
 {
   "name": "figure-collector-integration-tests",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Inter-service integration tests for Figure Collector Services",
   "scripts": {
     "test:integration": "jest --config=jest.integration.config.js --verbose",
