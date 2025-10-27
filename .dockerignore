@@ -13,6 +13,4 @@ integration-test-results
 integration-test-output.log
 *.tmp
 .DS_Store
-docker-compose*.yml
-Dockerfile*
 .dockerignore
