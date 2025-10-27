@@ -1,6 +1,6 @@
 {
   "name": "figure-collector-integration-tests",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Inter-service integration tests for Figure Collector Services",
   "scripts": {
     "test:integration": "jest --config=jest.integration.config.js --verbose",
@@ -18,15 +18,19 @@
   "dependencies": {
     "@types/jest": "^29.5.5",
     "@types/node": "^20.6.0",
-    "@types/supertest": "^2.0.12",
-    "axios": "^1.5.0",
+    "@types/supertest": "^6.0.3",
+    "axios": "^1.12.0",
     "bcryptjs": "^3.0.2",
-    "jest": "^29.7.0",
+    "jest": "^30.2.0",
     "jest-junit": "^16.0.0",
     "mongodb": "^6.1.0",
-    "supertest": "^6.3.3",
+    "supertest": "^7.1.4",
     "ts-jest": "^29.1.1",
     "typescript": "^5.2.2",
     "wait-for-expect": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "js-yaml": "^4.1.0"
   }
 }
